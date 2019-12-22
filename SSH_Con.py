@@ -31,7 +31,13 @@ class wg_mgt():
         for cmd in cmds:
             self.session_.send(cmd+'\n')
             time.sleep(5)
-            self.res += self.session_.recv(2048).decode()
+            for i in range(6):
+                if (self.session_.recv_exit_status()):
+                    self.res += self.session_.recv(2048).decode()
+                    print(self.res)
+                    break
+                else:
+                    time.sleep(10)                
         return self.res
 
     def wg_configure(self, cmds, policy = False):
@@ -97,7 +103,7 @@ if __name__ == '__main__':
         cur_entrise_with_number[entry[2]] = entry[1]
         cur_entrise.append(entry[2])
 
-    with open(r'c:\python\myCode\files\list') as f:
+    with open(r'c:\python\myCode\WatchGuard\list') as f:
         new_entrise = []
         tmp_entrise_dict = {}
         for row in f:
@@ -129,9 +135,8 @@ if __name__ == '__main__':
 #    print(add_cmds)
 
 
-#    bk_cmds = ['export config to tftp://192.168.113.2/configuration_{}.xml'.format(datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")),]
-#    res = cn.wg_show(bk_cmds)
-#    time.sleep(30)
+    bk_cmds = ['export config to tftp://192.168.113.2/configuration_{}.xml'.format(datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")),]
+    res = cn.wg_show(bk_cmds)
     chg_cmds = del_cmds + add_cmds
     res = cn.wg_configure(chg_cmds, policy=True)
     print(result + res )
