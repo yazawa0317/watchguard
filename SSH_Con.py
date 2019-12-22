@@ -23,7 +23,7 @@ class wg_mgt():
         self.con.connect(self.host, self.port, self.user, self.passwd)
 
         self.session_ = self.con.invoke_shell()
-        self.res += self.session_.recv(2048).decode()
+        self.res += self.session_.recv(9999).decode()
         return self.res
 
     def wg_show(self, cmds):   
@@ -31,13 +31,10 @@ class wg_mgt():
         for cmd in cmds:
             self.session_.send(cmd+'\n')
             time.sleep(5)
-            for i in range(6):
-                if (self.session_.recv_exit_status()):
-                    self.res += self.session_.recv(2048).decode()
-                    print(self.res)
-                    break
-                else:
-                    time.sleep(10)                
+            if (self.session_.recv_ready()):
+                self.res += self.session_.recv(9999).decode()                
+            else:
+                raise Exception
         return self.res
 
     def wg_configure(self, cmds, policy = False):
@@ -45,28 +42,32 @@ class wg_mgt():
         result = 'configure commands-----------\n'
         self.session_.send('configure\n')
         time.sleep(3)
-        self.res += self.session_.recv(2048).decode()
+        self.res += self.session_.recv(9999).decode()
 
         if policy is True:        
             self.session_.send('policy\n')
             time.sleep(3)
-            self.res += self.session_.recv(2048).decode()
+            self.res += self.session_.recv(9999).decode()
 
         for cmd in cmds:
             result += 'Execute Command---->' + cmd + '\n'
             self.session_.send(cmd+'\n')
             time.sleep(3)
-            self.res += self.session_.recv(2048).decode()
+            if (self.session_.recv_ready()):
+                self.res += self.session_.recv(9999).decode()
+                          
+            else:
+                raise Exception
 
         if policy is True:        
             self.session_.send('apply\n')
             time.sleep(3)
-            self.res += self.session_.recv(2048).decode()
-
+            self.res += self.session_.recv(9999).decode()
+            print(self.res)
         for v in range(3):
 
             self.session_.send('exit\n')           
-            self.res += self.session_.recv(2048).decode()
+            self.res += self.session_.recv(9999).decode()
 
             if 'WG#' in str(self.res[:-1]):
                 break 
@@ -78,7 +79,7 @@ class wg_mgt():
         for v in range(3):
             try:
                 self.session_.send('exit\n')
-                self.res += self.session_.recv(2048).decode()
+                self.res += self.session_.recv(9999).decode()
             except:
                 break
             
@@ -123,7 +124,6 @@ if __name__ == '__main__':
 #    print(del_cmds)
 
     add_entrise = set(new_entrise) - set(cur_entrise)
-
     add_cmds = []
     result += 'Add-Entry------------\n'
     for entry in list(add_entrise):
@@ -135,8 +135,8 @@ if __name__ == '__main__':
 #    print(add_cmds)
 
 
-    bk_cmds = ['export config to tftp://192.168.113.2/configuration_{}.xml'.format(datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")),]
-    res = cn.wg_show(bk_cmds)
+#    bk_cmds = ['export config to tftp://192.168.113.2/configuration_{}.xml'.format(datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")),]
+#    res = cn.wg_show(bk_cmds)
     chg_cmds = del_cmds + add_cmds
     res = cn.wg_configure(chg_cmds, policy=True)
     print(result + res )
